@@ -4,6 +4,12 @@
 
 A Manifest V3 Chrome extension for running bookmarklets from the right-click context menu and managing them from a dedicated options page. It supports registration, editing, reordering, search, JSON import/export, manual import from Chrome bookmarks, and bidirectional synchronization with selected Chrome bookmark folders.
 
+## v0.4.2
+
+- Make the main management-page sections collapsible
+- Route manual Chrome bookmark imports through the Service Worker
+- Rebuild the context menu immediately after a manual import so newly added bookmarklets can be launched without reloading the extension
+
 ## v0.4.1
 
 - Select multiple Chrome bookmark folders as synchronization roots
