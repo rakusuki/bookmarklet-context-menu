@@ -63,4 +63,16 @@ chrome.runtime.onMessage.addListener((m,_s,send)=>{(async()=>{
 })().then(send).catch(e=>send({error:e.message||String(e)}));return true;});
 chrome.contextMenus.onClicked.addListener(async(info,tab)=>{if(!tab?.id||!String(info.menuItemId).startsWith("bm:"))return;const x=(await state()).items.find(v=>v.id===String(info.menuItemId).slice(3));if(!x)return;try{await run(tab.id,x.url);}catch(e){console.error("Bookmarklet execution failed",e);}});
 function strip(url){return String(url||"").replace(/^\s*javascript\s*:/i,"");}
-async function run(tabId,url){if(!isBookmarklet(url))throw new Error("Not a javascript: bookmarklet");if(!chrome.userScripts?.execute)throw new Error("User Scripts are not enabled for this extension.");await chrome.userScripts.execute({target:{tabId},js:[{code:strip(url)}],world:"MAIN",injectImmediately:true});}
+async function run(tabId,url){
+ if(!isBookmarklet(url))throw new Error("Not a javascript: bookmarklet");
+ if(!chrome.userScripts?.execute)throw new Error("User Scripts are not enabled for this extension.");
+ const code=strip(url);
+ const results=await chrome.userScripts.execute({
+  target:{tabId},
+  js:[{code}],
+  world:"MAIN",
+  injectImmediately:true
+ });
+ const failed=results?.find(result=>result.error);
+ if(failed)throw new Error(failed.error);
+}
