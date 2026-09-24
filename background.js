@@ -69,11 +69,18 @@ chrome.contextMenus.onClicked.addListener(async(info,tab)=>{
   await run(tab.id,x.url);
  }catch(e){
   console.error("Bookmarklet execution failed",e);
+  const raw=String(e?.message||e);
+  const userScriptsDisabled=
+   /userScripts\.execute.*not available/i.test(raw)||
+   /User Scripts are not enabled/i.test(raw);
+  const message=userScriptsDisabled
+   ?"Bookmarkletを実行できません。\\nこの拡張機能の「ユーザー スクリプトを許可する」をONにし、拡張機能を再読み込みしてください。"
+   :`Bookmarkletの実行に失敗しました。\\n${raw}`;
   try{
    await chrome.scripting.executeScript({
     target:{tabId:tab.id},
-    func:message=>alert(message),
-    args:[`Bookmarkletの実行に失敗しました。\\n${e.message||e}`]
+    func:text=>alert(text),
+    args:[message]
    });
   }catch{}
  }
