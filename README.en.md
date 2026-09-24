@@ -10,6 +10,7 @@ A Manifest V3 Chrome extension for running bookmarklets from the right-click con
 - Route manual Chrome bookmark imports through the Service Worker
 - Rebuild the context menu immediately after a manual import so newly added bookmarklets can be launched without reloading the extension
 - Check whether the `userScripts` API is available on the management page and show a warning when it is disabled
+- Replace the raw Chrome API error with an actionable setup message when a context-menu launch is attempted while User Scripts are disabled
 
 ## v0.4.1
 
@@ -36,6 +37,8 @@ A Manifest V3 Chrome extension for running bookmarklets from the right-click con
 3. Click **Load unpacked** and select this repository folder.
 4. On Chrome 138 or later, open the extension's **Details** page and enable **Allow User Scripts**.
 5. Click the extension icon to open the management page.
+
+When **Allow User Scripts** is disabled, the management page shows a warning. If a bookmarklet is launched from the context menu in that state, the extension also instructs the user to enable the setting and reload the extension.
 
 ## Synchronization Behavior
 
