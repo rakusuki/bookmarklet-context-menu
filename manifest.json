@@ -9,6 +9,7 @@
     "bookmarks",
     "storage",
     "userScripts",
+    "scripting",
     "tabs"
   ],
   "host_permissions": [
