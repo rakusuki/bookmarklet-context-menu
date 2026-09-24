@@ -3,9 +3,22 @@ const isBookmarklet=url=>/^\s*javascript\s*:/i.test(String(url||"")),makeId=()=>
 let items=[],chromeBookmarklets=[],folders=[],sync={enabled:true,rootFolderIds:[],defaultSaveFolderId:null,lastSyncAt:null,lastSyncCount:0};
 init();
 chrome.storage.onChanged.addListener((c,a)=>{if(a!=="local")return;if(c[STORE_KEY])items=Array.isArray(c[STORE_KEY].newValue)?c[STORE_KEY].newValue:[];if(c[SYNC_KEY])sync={...sync,...c[SYNC_KEY].newValue};render();renderSync();renderChrome();});
-async function init(){const d=await chrome.storage.local.get([STORE_KEY,SYNC_KEY]);items=Array.isArray(d[STORE_KEY])?d[STORE_KEY]:[];sync={...sync,...(d[SYNC_KEY]||{})};bind();await loadTree();render();renderSync();renderChrome();}
+async function init(){const d=await chrome.storage.local.get([STORE_KEY,SYNC_KEY]);items=Array.isArray(d[STORE_KEY])?d[STORE_KEY]:[];sync={...sync,...(d[SYNC_KEY]||{})};bind();await checkUserScriptsAvailability();await loadTree();render();renderSync();renderChrome();}
 function bind(){$("save").onclick=saveItem;$("cancel").onclick=resetForm;$("search").oninput=render;$("chromeSearch").oninput=renderChrome;$("chromeSearchTarget").onchange=renderChrome;$("loadChrome").onclick=async()=>{await loadTree();renderSync();renderChrome();};$("addSyncRoot").onclick=addRoot;$("saveSyncSettings").onclick=saveSettings;$("syncNow").onclick=syncNow;$("export").onclick=exportJson;$("import").onchange=importJson;}
 async function send(m){const r=await chrome.runtime.sendMessage(m);if(r?.error)throw new Error(r.error);return r;}
+async function checkUserScriptsAvailability(){
+ const warning=$("userScriptsWarning"),ready=$("userScriptsReady");
+ try{
+  if(!chrome.userScripts?.getScripts)throw new Error("userScripts API unavailable");
+  await chrome.userScripts.getScripts();
+  warning.hidden=true;
+  ready.hidden=false;
+ }catch(e){
+  console.warn("User Scripts are not enabled for this extension.",e);
+  ready.hidden=true;
+  warning.hidden=false;
+ }
+}
 function button(text,fn,disabled=false,cls="secondary"){const b=document.createElement("button");b.textContent=text;b.className=cls;b.disabled=disabled;b.onclick=fn;return b;}
 async function persist(){items.forEach((x,i)=>x.order=i);await chrome.storage.local.set({[STORE_KEY]:items});render();}
 async function saveItem(){const title=$("title").value.trim(),url=$("url").value.trim(),id=$("editId").value;if(!title||!isBookmarklet(url)){alert("名前と javascript: で始まるURLを入力してください。");return;}try{if(id){const x=items.find(v=>v.id===id);if(!x)return;if(x.chromeBookmarkId)await send({type:"UPDATE_SYNCED_BOOKMARK",bookmarkId:x.chromeBookmarkId,title,url});else{x.title=title;x.url=url;await persist();}}else if($("saveToChrome").checked){await send({type:"CREATE_SYNCED_BOOKMARK",title,url});}else{items.push({id:makeId(),title,url,chromeBookmarkId:null,order:items.length,syncedAt:null});await persist();}resetForm();}catch(e){alert(e.message);}}
