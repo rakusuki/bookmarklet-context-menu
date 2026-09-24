@@ -61,7 +61,23 @@ chrome.runtime.onMessage.addListener((m,_s,send)=>{(async()=>{
  if(m?.type==="DELETE_SYNCED_BOOKMARK"){await chrome.bookmarks.remove(m.bookmarkId);await requestSync();return{ok:true};}
  return null;
 })().then(send).catch(e=>send({error:e.message||String(e)}));return true;});
-chrome.contextMenus.onClicked.addListener(async(info,tab)=>{if(!tab?.id||!String(info.menuItemId).startsWith("bm:"))return;const x=(await state()).items.find(v=>v.id===String(info.menuItemId).slice(3));if(!x)return;try{await run(tab.id,x.url);}catch(e){console.error("Bookmarklet execution failed",e);}});
+chrome.contextMenus.onClicked.addListener(async(info,tab)=>{
+ if(!tab?.id||!String(info.menuItemId).startsWith("bm:"))return;
+ const x=(await state()).items.find(v=>v.id===String(info.menuItemId).slice(3));
+ if(!x)return;
+ try{
+  await run(tab.id,x.url);
+ }catch(e){
+  console.error("Bookmarklet execution failed",e);
+  try{
+   await chrome.scripting.executeScript({
+    target:{tabId:tab.id},
+    func:message=>alert(message),
+    args:[`Bookmarkletの実行に失敗しました。\\n${e.message||e}`]
+   });
+  }catch{}
+ }
+});
 function strip(url){return String(url||"").replace(/^\s*javascript\s*:/i,"");}
 async function run(tabId,url){
  if(!isBookmarklet(url))throw new Error("Not a javascript: bookmarklet");
