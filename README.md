@@ -1,75 +1,61 @@
 # Bookmarklet Context Menu
 
-[日本語](README.ja.md) | English
+Chromeの右クリックメニューからBookmarkletを実行し、管理画面から登録・編集・並べ替え・検索・JSON入出力・Chromeブックマーク同期を行うManifest V3拡張機能です。
 
-A Chrome extension that lets you **quickly run your bookmarklets directly from the right-click context menu**.
+## v0.4.1
 
-Instead of opening the bookmarks bar or navigating through bookmark folders every time you want to run a bookmarklet, you can register your bookmarklets with this extension and launch them directly from the context menu on any supported web page.
+- 複数のChromeブックマークフォルダを同期ルートとして指定
+- 各同期ルート配下を再帰的に双方向同期
+- Bookmarklet/フォルダの移動を検知し、同期範囲への出入りを自動反映
+- 新規BookmarkletのChrome保存先を同期範囲内から指定
+- Chrome Bookmark IDを同期済み項目の同一性キーとして利用
+- 起動時・インポート終了時・手動操作時の全体整合 `syncAll()`
+- Chrome側の作成・変更・移動・削除イベントを監視
+- v0.3.xの `bookmarkId` を `chromeBookmarkId` へ移行するschema v4 migration
+- v0.3.xで同期済みだったBookmarkletの親フォルダを初期同期ルートとして移行
+- 同期ルート消失、保存先消失、親子ルート重複を同期時に自己修復
+- Chrome起点の競合ではChrome側を正とする
+- JSONインポート項目はローカル専用として維持
 
-The extension provides a dedicated interface for managing bookmarklets, including adding, editing, deleting, reordering, and searching. You can also import existing bookmarklets from your Chrome bookmarks and export or import your registered bookmarklet data.
+## インストール
 
-Bookmarklets added directly through this extension are managed separately from Chrome's standard bookmarks, allowing you to maintain a dedicated bookmarklet environment without changing your existing Chrome bookmark structure.
+1. `chrome://extensions` を開く。
+2. 「デベロッパー モード」をONにする。
+3. 「パッケージ化されていない拡張機能を読み込む」でこのリポジトリのフォルダを指定する。
+4. Chrome 138以降では拡張機能の「詳細」で「ユーザー スクリプトを許可する」をONにする。
+5. 拡張機能アイコンをクリックして管理画面を開く。
 
-## Features
+## 同期仕様
 
-### 🖱️ Run Bookmarklets from the Context Menu
+同期対象は、管理画面で指定した1つ以上の同期ルートとその全子孫です。その範囲内にある `javascript:` URLのみを同期します。
 
-Registered bookmarklets are displayed in Chrome's right-click context menu.
+- Chromeで作成: 同期範囲内なら拡張機能へ追加
+- Chromeでタイトル/URL変更: 拡張機能へ反映
+- 通常URL → `javascript:`: 同期範囲内なら追加
+- `javascript:` → 通常URL: 拡張機能から同期項目を解除
+- 同期範囲外 → 内へ移動: 追加
+- 同期範囲内 → 外へ移動: 拡張機能から解除（Chrome側は削除しない）
+- フォルダ移動: 配下全体を再評価
+- Chromeで削除: 拡張機能から削除
+- 拡張機能で同期済み項目を編集: Chromeを更新後に再同期
+- 拡張機能で同期済み項目を削除: 確認後、Chrome側も削除
+- 起動時に不一致: Chrome側を正として収束
 
-Simply right-click on a supported web page and select the bookmarklet you want to run.
+## データ
 
-### ➕ Add Bookmarklets
+`chrome.storage.local` に主に以下を保存します。
 
-Create new bookmarklets from the extension's management page by specifying a title and JavaScript URL.
+- `schemaVersion`: `4`
+- `bookmarklets`: Bookmarklet一覧。同期済みは `chromeBookmarkId` を保持
+- `syncSettings`: `enabled`, `rootFolderIds`, `defaultSaveFolderId`, `lastSyncAt`, `lastSyncCount`
 
-Bookmarklets created directly in the extension are stored separately from Chrome's standard bookmarks.
+## 制約
 
-### 🔖 Import from Chrome Bookmarks
+- Chrome標準のブックマークバー/ブックマークマネージャーの右クリックメニューへ拡張機能独自項目を追加することはできません。
+- `chrome://` やChrome Web Storeなど、Chromeがスクリプト注入を禁止するページではBookmarkletを実行できません。
+- v0.4.1ではChromeフォルダ階層を右クリックメニュー階層へ反映しません。
 
-Search your existing Chrome bookmarks and add bookmarklets directly to the extension.
 
-There is no need to manually copy and paste bookmarklet code that you already have saved in Chrome.
+## v0.4.1
 
-### 🔎 Search Chrome Bookmarks by Title or URL
-
-When importing bookmarklets from Chrome, you can choose where to search:
-
-- Title
-- URL
-
-This makes it easier to find bookmarklets even when you have a large number of Chrome bookmarks.
-
-### ✏️ Edit and Delete Bookmarklets
-
-Modify the title or URL of registered bookmarklets from the management interface.
-
-Bookmarklets that are no longer needed can also be deleted.
-
-### ↕️ Reorder Bookmarklets
-
-Change the display order of registered bookmarklets.
-
-Frequently used bookmarklets can be placed near the top for faster access from the context menu.
-
-### 🔍 Search Registered Bookmarklets
-
-Quickly filter and find registered bookmarklets from the management interface as your collection grows.
-
-### 📤 Export / 📥 Import
-
-Export your registered bookmarklet collection for backup or migration.
-
-Exported data can be imported later to restore your collection or transfer it to another environment.
-
-## Why This Extension?
-
-Bookmarklets provide a simple and powerful way to run small JavaScript programs directly on web pages.
-
-However, as the number of bookmarklets grows, several problems can arise:
-
-- The bookmarks bar becomes cluttered.
-- Bookmarklets become difficult to find inside folders.
-- Running a bookmarklet may require several clicks.
-- Bookmarklets become mixed with ordinary website bookmarks.
-
-**Bookmarklet Context Menu** aims to turn bookmarklets from something you have to **find in your bookmarks** into tools you can **run immediately with a right-click when you need them**.
+Chromeブックマーク一覧から、同期対象外のBookmarkletを手動で拡張機能へ追加する機能を復元しました。手動追加はChrome側を変更せずローカルコピーとして保持し、後から元フォルダが同期対象になった場合は同じChrome Bookmark IDを基に同期項目へ昇格して重複を防ぎます。
