@@ -9,6 +9,7 @@ A Manifest V3 Chrome extension for running bookmarklets from the right-click con
 - Make the main management-page sections collapsible
 - Route manual Chrome bookmark imports through the Service Worker
 - Rebuild the context menu immediately after a manual import so newly added bookmarklets can be launched without reloading the extension
+- Check whether the `userScripts` API is available on the management page and show a warning when it is disabled
 
 ## v0.4.1
 
@@ -72,4 +73,4 @@ The extension mainly stores the following data in `chrome.storage.local`:
 
 - Chrome extensions cannot add custom extension items to the context menu of Chrome's standard bookmarks bar or bookmark manager.
 - Bookmarklets cannot run on pages where Chrome prohibits script injection, such as `chrome://` pages and the Chrome Web Store.
-- v0.4.1 does not mirror the Chrome bookmark folder hierarchy in the right-click context menu.
+- v0.4.2 does not mirror the Chrome bookmark folder hierarchy in the right-click context menu.
