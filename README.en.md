@@ -4,6 +4,14 @@
 
 A Manifest V3 Chrome extension for running bookmarklets from the right-click context menu and managing them from a dedicated options page. It supports registration, editing, reordering, search, JSON import/export, manual import from Chrome bookmarks, and bidirectional synchronization with selected Chrome bookmark folders.
 
+## v0.4.2
+
+- Make the main management-page sections collapsible
+- Route manual Chrome bookmark imports through the Service Worker
+- Rebuild the context menu immediately after a manual import so newly added bookmarklets can be launched without reloading the extension
+- Check whether the `userScripts` API is available on the management page and show a warning when it is disabled
+- Replace the raw Chrome API error with an actionable setup message when a context-menu launch is attempted while User Scripts are disabled
+
 ## v0.4.1
 
 - Select multiple Chrome bookmark folders as synchronization roots
@@ -29,6 +37,8 @@ A Manifest V3 Chrome extension for running bookmarklets from the right-click con
 3. Click **Load unpacked** and select this repository folder.
 4. On Chrome 138 or later, open the extension's **Details** page and enable **Allow User Scripts**.
 5. Click the extension icon to open the management page.
+
+When **Allow User Scripts** is disabled, the management page shows a warning. If a bookmarklet is launched from the context menu in that state, the extension also instructs the user to enable the setting and reload the extension.
 
 ## Synchronization Behavior
 
@@ -66,4 +76,4 @@ The extension mainly stores the following data in `chrome.storage.local`:
 
 - Chrome extensions cannot add custom extension items to the context menu of Chrome's standard bookmarks bar or bookmark manager.
 - Bookmarklets cannot run on pages where Chrome prohibits script injection, such as `chrome://` pages and the Chrome Web Store.
-- v0.4.1 does not mirror the Chrome bookmark folder hierarchy in the right-click context menu.
+- v0.4.2 does not mirror the Chrome bookmark folder hierarchy in the right-click context menu.

@@ -46,11 +46,56 @@ chrome.bookmarks.onImportBegan.addListener(()=>{importing=true;});chrome.bookmar
 chrome.runtime.onMessage.addListener((m,_s,send)=>{(async()=>{
  if(m?.type==="SYNC_NOW")return requestSync();
  if(m?.type==="SAVE_SYNC_SETTINGS"){const s=await normalize({...defaults(),...(m.settings||{})});await chrome.storage.local.set({[SYNC_KEY]:s});return requestSync();}
+ if(m?.type==="MANUAL_IMPORT_BOOKMARK"){
+  const b=await node(m.bookmarkId);
+  if(!b||!b.url||!isBookmarklet(b.url))throw new Error("Chrome Bookmarkletが見つかりません。");
+  let {items}=await state();
+  if(items.some(x=>x.chromeBookmarkId===b.id||x.sourceChromeBookmarkId===b.id))return{ok:true,already:true};
+  items.push({id:makeId(),title:b.title||"(untitled)",url:b.url,chromeBookmarkId:null,sourceChromeBookmarkId:b.id,order:items.length,syncedAt:null});
+  await chrome.storage.local.set({[STORE_KEY]:items});
+  await menus(items);
+  return{ok:true,already:false};
+ }
  if(m?.type==="CREATE_SYNCED_BOOKMARK"){const s=await normalize((await state()).sync);if(!s.defaultSaveFolderId)throw new Error("新規保存先が設定されていません。");const n=await chrome.bookmarks.create({parentId:s.defaultSaveFolderId,title:m.title,url:m.url});await requestSync();return{bookmarkId:n.id};}
  if(m?.type==="UPDATE_SYNCED_BOOKMARK"){await chrome.bookmarks.update(m.bookmarkId,{title:m.title,url:m.url});await requestSync();return{ok:true};}
  if(m?.type==="DELETE_SYNCED_BOOKMARK"){await chrome.bookmarks.remove(m.bookmarkId);await requestSync();return{ok:true};}
  return null;
 })().then(send).catch(e=>send({error:e.message||String(e)}));return true;});
-chrome.contextMenus.onClicked.addListener(async(info,tab)=>{if(!tab?.id||!String(info.menuItemId).startsWith("bm:"))return;const x=(await state()).items.find(v=>v.id===String(info.menuItemId).slice(3));if(!x)return;try{await run(tab.id,x.url);}catch(e){console.error("Bookmarklet execution failed",e);}});
+chrome.contextMenus.onClicked.addListener(async(info,tab)=>{
+ if(!tab?.id||!String(info.menuItemId).startsWith("bm:"))return;
+ const x=(await state()).items.find(v=>v.id===String(info.menuItemId).slice(3));
+ if(!x)return;
+ try{
+  await run(tab.id,x.url);
+ }catch(e){
+  console.error("Bookmarklet execution failed",e);
+  const raw=String(e?.message||e);
+  const userScriptsDisabled=
+   /userScripts\.execute.*not available/i.test(raw)||
+   /User Scripts are not enabled/i.test(raw);
+  const message=userScriptsDisabled
+   ?"Bookmarkletを実行できません。\nこの拡張機能の「ユーザー スクリプトを許可する」をONにし、拡張機能を再読み込みしてください。"
+   :`Bookmarkletの実行に失敗しました。\\n${raw}`;
+  try{
+   await chrome.scripting.executeScript({
+    target:{tabId:tab.id},
+    func:text=>alert(text),
+    args:[message]
+   });
+  }catch{}
+ }
+});
 function strip(url){return String(url||"").replace(/^\s*javascript\s*:/i,"");}
-async function run(tabId,url){if(!isBookmarklet(url))throw new Error("Not a javascript: bookmarklet");if(!chrome.userScripts?.execute)throw new Error("User Scripts are not enabled for this extension.");await chrome.userScripts.execute({target:{tabId},js:[{code:strip(url)}],world:"MAIN",injectImmediately:true});}
+async function run(tabId,url){
+ if(!isBookmarklet(url))throw new Error("Not a javascript: bookmarklet");
+ if(!chrome.userScripts?.execute)throw new Error("User Scripts are not enabled for this extension.");
+ const code=strip(url);
+ const results=await chrome.userScripts.execute({
+  target:{tabId},
+  js:[{code}],
+  world:"MAIN",
+  injectImmediately:true
+ });
+ const failed=results?.find(result=>result.error);
+ if(failed)throw new Error(failed.error);
+}
