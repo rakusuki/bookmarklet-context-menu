@@ -46,7 +46,17 @@ chrome.bookmarks.onImportBegan.addListener(()=>{importing=true;});chrome.bookmar
 chrome.runtime.onMessage.addListener((m,_s,send)=>{(async()=>{
  if(m?.type==="SYNC_NOW")return requestSync();
  if(m?.type==="SAVE_SYNC_SETTINGS"){const s=await normalize({...defaults(),...(m.settings||{})});await chrome.storage.local.set({[SYNC_KEY]:s});return requestSync();}
- if(m?.type==="MANUAL_IMPORT_BOOKMARK"){\n  const b=await node(m.bookmarkId);if(!b||!b.url||!isBookmarklet(b.url))throw new Error("Chrome Bookmarkletが見つかりません。");\n  let {items}=await state();if(items.some(x=>x.chromeBookmarkId===b.id||x.sourceChromeBookmarkId===b.id))return{ok:true,already:true};\n  items.push({id:makeId(),title:b.title||"(untitled)",url:b.url,chromeBookmarkId:null,sourceChromeBookmarkId:b.id,order:items.length,syncedAt:null});\n  await chrome.storage.local.set({[STORE_KEY]:items});await menus(items);return{ok:true,already:false};\n }\n if(m?.type==="CREATE_SYNCED_BOOKMARK"){const s=await normalize((await state()).sync);if(!s.defaultSaveFolderId)throw new Error("新規保存先が設定されていません。");const n=await chrome.bookmarks.create({parentId:s.defaultSaveFolderId,title:m.title,url:m.url});await requestSync();return{bookmarkId:n.id};}
+ if(m?.type==="MANUAL_IMPORT_BOOKMARK"){
+  const b=await node(m.bookmarkId);
+  if(!b||!b.url||!isBookmarklet(b.url))throw new Error("Chrome Bookmarkletが見つかりません。");
+  let {items}=await state();
+  if(items.some(x=>x.chromeBookmarkId===b.id||x.sourceChromeBookmarkId===b.id))return{ok:true,already:true};
+  items.push({id:makeId(),title:b.title||"(untitled)",url:b.url,chromeBookmarkId:null,sourceChromeBookmarkId:b.id,order:items.length,syncedAt:null});
+  await chrome.storage.local.set({[STORE_KEY]:items});
+  await menus(items);
+  return{ok:true,already:false};
+ }
+ if(m?.type==="CREATE_SYNCED_BOOKMARK"){const s=await normalize((await state()).sync);if(!s.defaultSaveFolderId)throw new Error("新規保存先が設定されていません。");const n=await chrome.bookmarks.create({parentId:s.defaultSaveFolderId,title:m.title,url:m.url});await requestSync();return{bookmarkId:n.id};}
  if(m?.type==="UPDATE_SYNCED_BOOKMARK"){await chrome.bookmarks.update(m.bookmarkId,{title:m.title,url:m.url});await requestSync();return{ok:true};}
  if(m?.type==="DELETE_SYNCED_BOOKMARK"){await chrome.bookmarks.remove(m.bookmarkId);await requestSync();return{ok:true};}
  return null;
