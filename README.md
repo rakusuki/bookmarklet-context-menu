@@ -1,5 +1,7 @@
 # Bookmarklet Context Menu
 
+日本語 | [English](README.en.md)
+
 Chromeの右クリックメニューからBookmarkletを実行し、管理画面から登録・編集・並べ替え・検索・JSON入出力・Chromeブックマーク同期を行うManifest V3拡張機能です。
 
 ## v0.4.1
@@ -16,6 +18,9 @@ Chromeの右クリックメニューからBookmarkletを実行し、管理画面
 - 同期ルート消失、保存先消失、親子ルート重複を同期時に自己修復
 - Chrome起点の競合ではChrome側を正とする
 - JSONインポート項目はローカル専用として維持
+- Chromeブックマーク一覧から、同期対象外のBookmarkletを手動で拡張機能へ追加可能
+- 手動追加はChrome側を変更せずローカルコピーとして保持
+- 手動追加元が後から同期対象になった場合、同じChrome Bookmark IDを基に同期項目へ昇格し重複を防止
 
 ## インストール
 
@@ -54,8 +59,3 @@ Chromeの右クリックメニューからBookmarkletを実行し、管理画面
 - Chrome標準のブックマークバー/ブックマークマネージャーの右クリックメニューへ拡張機能独自項目を追加することはできません。
 - `chrome://` やChrome Web Storeなど、Chromeがスクリプト注入を禁止するページではBookmarkletを実行できません。
 - v0.4.1ではChromeフォルダ階層を右クリックメニュー階層へ反映しません。
-
-
-## v0.4.1
-
-Chromeブックマーク一覧から、同期対象外のBookmarkletを手動で拡張機能へ追加する機能を復元しました。手動追加はChrome側を変更せずローカルコピーとして保持し、後から元フォルダが同期対象になった場合は同じChrome Bookmark IDを基に同期項目へ昇格して重複を防ぎます。
