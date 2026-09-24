@@ -24,11 +24,17 @@ async function syncNow(){try{await send({type:"SYNC_NOW"});await loadTree();}cat
 async function addChromeBookmarklet(bookmark){
  if(items.some(x=>x.chromeBookmarkId===bookmark.id||x.sourceChromeBookmarkId===bookmark.id)){alert("このBookmarkletはすでに登録されています。");return;}
  try{
-  await send({type:"MANUAL_IMPORT_BOOKMARK",bookmarkId:bookmark.id});
+  const result=await send({type:"MANUAL_IMPORT_BOOKMARK",bookmarkId:bookmark.id});
   const d=await chrome.storage.local.get(STORE_KEY);
   items=Array.isArray(d[STORE_KEY])?d[STORE_KEY]:[];
-  render();renderChrome();
- }catch(e){alert(e.message);}
+  const registered=items.some(x=>x.chromeBookmarkId===bookmark.id||x.sourceChromeBookmarkId===bookmark.id);
+  if(!registered)throw new Error("追加処理後の登録状態を確認できませんでした。");
+  render();
+  renderChrome();
+ }catch(e){
+  console.error("Manual bookmark import failed",e);
+  alert(`Bookmarkletの追加に失敗しました。\n${e.message||e}`);
+ }
 }
 function renderChrome(){const q=$("chromeSearch").value.trim().toLowerCase(),target=$("chromeSearchTarget").value,box=$("chromeBookmarks");box.textContent="";const linked=new Set(items.map(x=>x.chromeBookmarkId).filter(Boolean)),manual=new Set(items.map(x=>x.sourceChromeBookmarkId).filter(Boolean)),list=chromeBookmarklets.filter(x=>{if(!q)return true;const t=(x.title||"").toLowerCase(),u=(x.url||"").toLowerCase();return target==="title"?t.includes(q):target==="url"?u.includes(q):t.includes(q)||u.includes(q);});if(!list.length){box.innerHTML='<div class="empty">Bookmarklet形式のChromeブックマークがありません。</div>';return;}for(const x of list){const el=document.createElement("div");el.className="item";const info=document.createElement("div");info.innerHTML='<div class="item-title"></div><div class="item-url"></div>';info.children[0].textContent=x.title;info.children[1].textContent=x.url;const act=document.createElement("div");act.className="actions";if(linked.has(x.id)){const status=document.createElement("span");status.className="note small";status.textContent="同期済み";act.append(status);}else if(manual.has(x.id)){const status=document.createElement("span");status.className="note small";status.textContent="追加済み";act.append(status);}else{act.append(button("追加",()=>addChromeBookmarklet(x),false,"secondary"));}el.append(info,act);box.append(el);}}
 function exportJson(){const blob=new Blob([JSON.stringify({version:4,exportedAt:new Date().toISOString(),items:items.map(({title,url})=>({title,url}))},null,2)],{type:"application/json"}),a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=`bookmarklets-${new Date().toISOString().slice(0,10)}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);}
