@@ -86,10 +86,19 @@ chrome.contextMenus.onClicked.addListener(async(info,tab)=>{
  }
 });
 function strip(url){return String(url||"").replace(/^\s*javascript\s*:/i,"");}
+function decodeBookmarkletSource(url){
+ const source=strip(url);
+ try{
+  return decodeURIComponent(source);
+ }catch(e){
+  console.warn("Bookmarklet URL decoding failed; using the stored source unchanged.",e);
+  return source;
+ }
+}
 async function run(tabId,url){
  if(!isBookmarklet(url))throw new Error("Not a javascript: bookmarklet");
  if(!chrome.userScripts?.execute)throw new Error("User Scripts are not enabled for this extension.");
- const code=strip(url);
+ const code=decodeBookmarkletSource(url);
  const results=await chrome.userScripts.execute({
   target:{tabId},
   js:[{code}],

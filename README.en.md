@@ -4,6 +4,14 @@
 
 A Manifest V3 Chrome extension for running bookmarklets from the right-click context menu and managing them from a dedicated options page. It supports registration, editing, reordering, search, JSON import/export, manual import from Chrome bookmarks, and bidirectional synchronization with selected Chrome bookmark folders.
 
+## v0.4.3
+
+- Decode the complete bookmarklet URL source after removing the `javascript:` prefix using `decodeURIComponent()`-equivalent URL decoding
+- Restore `%22`, `%20`, UTF-8 percent-encoded text, and other URL-encoded JavaScript syntax before execution to match Chrome bookmark-bar behavior more closely
+- Preserve JavaScript Unicode escape sequences such as `\\u3010` for the JavaScript engine to interpret normally
+- If the complete URL cannot be decoded because of malformed percent encoding, fall back to the stored source unchanged
+- Keep the stored bookmarklet URL untouched; normalization is applied only at execution time
+
 ## v0.4.2
 
 - Make the main management-page sections collapsible

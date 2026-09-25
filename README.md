@@ -4,6 +4,14 @@
 
 Chromeの右クリックメニューからBookmarkletを実行し、管理画面から登録・編集・並べ替え・検索・JSON入出力・Chromeブックマーク同期を行うManifest V3拡張機能です。
 
+## v0.4.3
+
+- Bookmarklet実行直前に `javascript:` を除いたURL全体へ `decodeURIComponent()` 相当のURLデコードを適用
+- Chromeブックマークバー実行時と同様に `%22`、`%20`、UTF-8パーセントエンコードなどをJavaScriptソースへ復元してから実行
+- JavaScriptソース内に記述された `\\u3010` などのUnicodeエスケープはそのままJavaScriptエンジンへ渡す
+- 不正なパーセントエンコードでURL全体をデコードできない場合は、保存されたソースを変更せずフォールバック
+- 保存済みBookmarklet URL自体は書き換えず、実行時だけ変換
+
 ## v0.4.2
 
 - 管理画面の主要エリアを折りたたみ可能に変更
