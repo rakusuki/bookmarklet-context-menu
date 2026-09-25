@@ -6,10 +6,10 @@ Chromeの右クリックメニューからBookmarkletを実行し、管理画面
 
 ## v0.4.3
 
-- Bookmarklet実行直前に、URL内のUTF-8パーセントエンコードされた非ASCII文字をJavaScriptソースへ復元
-- Chromeブックマークバーから実行した場合に近い日本語・Unicode文字列の扱いを目指して互換性を改善
-- `%20` などASCII範囲だけのパーセント表現は自動変換せず、Bookmarklet内の意図した文字列を可能な限り保持
-- 不正なパーセントエンコードは変更せず、そのまま実行処理へ渡す
+- Bookmarklet実行直前に `javascript:` を除いたURL全体へ `decodeURIComponent()` 相当のURLデコードを適用
+- Chromeブックマークバー実行時と同様に `%22`、`%20`、UTF-8パーセントエンコードなどをJavaScriptソースへ復元してから実行
+- JavaScriptソース内に記述された `\\u3010` などのUnicodeエスケープはそのままJavaScriptエンジンへ渡す
+- 不正なパーセントエンコードでURL全体をデコードできない場合は、保存されたソースを変更せずフォールバック
 - 保存済みBookmarklet URL自体は書き換えず、実行時だけ変換
 
 ## v0.4.2
