@@ -88,12 +88,12 @@ chrome.contextMenus.onClicked.addListener(async(info,tab)=>{
 function strip(url){return String(url||"").replace(/^\s*javascript\s*:/i,"");}
 function decodeBookmarkletSource(url){
  const source=strip(url);
- return source.replace(/(?:%[0-9a-f]{2})+/gi,run=>{
-  const bytes=run.match(/%([0-9a-f]{2})/gi)||[];
-  const hasNonAscii=bytes.some(x=>parseInt(x.slice(1),16)>=0x80);
-  if(!hasNonAscii)return run;
-  try{return decodeURIComponent(run);}catch{return run;}
- });
+ try{
+  return decodeURIComponent(source);
+ }catch(e){
+  console.warn("Bookmarklet URL decoding failed; using the stored source unchanged.",e);
+  return source;
+ }
 }
 async function run(tabId,url){
  if(!isBookmarklet(url))throw new Error("Not a javascript: bookmarklet");
