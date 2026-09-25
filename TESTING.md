@@ -58,3 +58,8 @@
 - [ ] 不正なパーセントエンコードを含む場合でも変換処理自体ではクラッシュしない
 - [ ] 登録済みBookmarkletの保存URLが実行によって書き換わらない
 - [ ] v0.4.2で動作していたASCIIのみのBookmarkletが引き続き動作する
+
+- [ ] `clipboardData.setData(%22Text%22,t)` が実行時に `clipboardData.setData("Text",t)` へ復元される
+- [ ] `var%20dlg=%22...%22` が実行時に `var dlg="..."` へ復元される
+- [ ] JavaScript内の `\\u3010` 等のUnicodeエスケープが正常に日本語として表示される
+- [ ] Chromeブックマークバーと右クリック実行で、同じBookmarkletの実行用JavaScriptが実質的に同一になる
