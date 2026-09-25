@@ -6,10 +6,10 @@ A Manifest V3 Chrome extension for running bookmarklets from the right-click con
 
 ## v0.4.3
 
-- Decode UTF-8 percent-encoded non-ASCII characters in bookmarklet URLs immediately before execution
-- Improve compatibility with Japanese and other Unicode text when launching bookmarklets from the context menu
-- Preserve ASCII-only percent sequences such as `%20` to avoid unnecessarily changing intentional bookmarklet string data
-- Leave malformed percent-encoded sequences unchanged
+- Decode the complete bookmarklet URL source after removing the `javascript:` prefix using `decodeURIComponent()`-equivalent URL decoding
+- Restore `%22`, `%20`, UTF-8 percent-encoded text, and other URL-encoded JavaScript syntax before execution to match Chrome bookmark-bar behavior more closely
+- Preserve JavaScript Unicode escape sequences such as `\\u3010` for the JavaScript engine to interpret normally
+- If the complete URL cannot be decoded because of malformed percent encoding, fall back to the stored source unchanged
 - Keep the stored bookmarklet URL untouched; normalization is applied only at execution time
 
 ## v0.4.2
