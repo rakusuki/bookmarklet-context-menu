@@ -23,8 +23,47 @@ function button(text,fn,disabled=false,cls="secondary"){const b=document.createE
 async function persist(){items.forEach((x,i)=>x.order=i);await chrome.storage.local.set({[STORE_KEY]:items});render();}
 async function saveItem(){const title=$("title").value.trim(),url=$("url").value.trim(),id=$("editId").value;if(!title||!isBookmarklet(url)){alert("名前と javascript: で始まるURLを入力してください。");return;}try{if(id){const x=items.find(v=>v.id===id);if(!x)return;if(x.chromeBookmarkId)await send({type:"UPDATE_SYNCED_BOOKMARK",bookmarkId:x.chromeBookmarkId,title,url});else{x.title=title;x.url=url;await persist();}}else if($("saveToChrome").checked){await send({type:"CREATE_SYNCED_BOOKMARK",title,url});}else{items.push({id:makeId(),title,url,chromeBookmarkId:null,order:items.length,syncedAt:null});await persist();}resetForm();}catch(e){alert(e.message);}}
 function resetForm(){$("editId").value="";$("title").value="";$("url").value="";$("cancel").hidden=true;$("save").textContent="保存";}
-function render(){const q=$("search").value.trim().toLowerCase(),box=$("items");box.textContent="";const list=items.map((x,i)=>({...x,_index:i})).filter(x=>!q||x.title.toLowerCase().includes(q)||x.url.toLowerCase().includes(q));if(!list.length){box.innerHTML='<div class="empty">該当する登録はありません。</div>';return;}for(const x of list){const el=document.createElement("div");el.className="item";const info=document.createElement("div");info.innerHTML='<div class="item-title"></div><div class="item-url"></div>';info.children[0].textContent=x.title+(x.chromeBookmarkId?"  [Chrome同期]":"  [ローカル]");info.children[1].textContent=x.url;const act=document.createElement("div");act.className="actions";act.append(button("↑",()=>move(x._index,-1),x._index===0),button("↓",()=>move(x._index,1),x._index===items.length-1),button("編集",()=>edit(x.id)),button("削除",()=>removeItem(x.id),false,"danger"));el.append(info,act);box.append(el);}}
-async function move(i,d){const j=i+d;if(j<0||j>=items.length)return;[items[i],items[j]]=[items[j],items[i]];await persist();}
+let draggedId=null;
+function render(){
+ const q=$("search").value.trim().toLowerCase(),box=$("items");
+ box.textContent="";
+ const list=items.filter(x=>!q||x.title.toLowerCase().includes(q)||x.url.toLowerCase().includes(q));
+ if(!list.length){box.innerHTML='<div class="empty">該当する登録はありません。</div>';return;}
+ for(const x of list){
+  const el=document.createElement("div");el.className="item";el.dataset.bookmarkletId=x.id;
+  const handle=document.createElement("span");handle.className="drag-handle";handle.textContent="☰";handle.title="ドラッグして並び替え";handle.draggable=!q;
+  handle.setAttribute("aria-label","並び替えハンドル");
+  const info=document.createElement("div");
+  info.innerHTML='<div class="item-title"></div><div class="item-url"></div>';
+  info.children[0].textContent=x.title+(x.chromeBookmarkId?"  [Chrome同期]":"  [ローカル]");
+  info.children[1].textContent=x.url;
+  const act=document.createElement("div");act.className="actions";
+  act.append(button("編集",()=>edit(x.id)),button("削除",()=>removeItem(x.id),false,"danger"));
+  el.append(handle,info,act);box.append(el);
+  handle.addEventListener("dragstart",e=>{
+   draggedId=x.id;el.classList.add("dragging");
+   e.dataTransfer.effectAllowed="move";e.dataTransfer.setData("text/plain",x.id);
+  });
+  handle.addEventListener("dragend",()=>{draggedId=null;clearDragStyles();});
+  el.addEventListener("dragover",e=>{
+   if(!draggedId||draggedId===x.id||q)return;
+   e.preventDefault();e.dataTransfer.dropEffect="move";
+   clearDropTargets();el.classList.add("drop-target");
+  });
+  el.addEventListener("dragleave",e=>{if(!el.contains(e.relatedTarget))el.classList.remove("drop-target");});
+  el.addEventListener("drop",async e=>{
+   if(!draggedId||q)return;
+   e.preventDefault();const source=draggedId;draggedId=null;clearDragStyles();
+   if(source===x.id)return;
+   const from=items.findIndex(v=>v.id===source),to=items.findIndex(v=>v.id===x.id);
+   if(from<0||to<0)return;
+   const [moved]=items.splice(from,1);items.splice(to,0,moved);
+   await persist();
+  });
+ }
+}
+function clearDropTargets(){document.querySelectorAll("#items .drop-target").forEach(el=>el.classList.remove("drop-target"));}
+function clearDragStyles(){clearDropTargets();document.querySelectorAll("#items .dragging").forEach(el=>el.classList.remove("dragging"));}
 function edit(id){const x=items.find(v=>v.id===id);if(!x)return;$("editId").value=x.id;$("title").value=x.title;$("url").value=x.url;$("cancel").hidden=false;$("save").textContent="更新";scrollTo({top:0,behavior:"smooth"});}
 async function removeItem(id){const x=items.find(v=>v.id===id);if(!x||!confirm(`「${x.title}」を削除しますか？`))return;try{if(x.chromeBookmarkId){if(!confirm("同期済み項目のためChromeブックマーク側からも削除します。続行しますか？"))return;await send({type:"DELETE_SYNCED_BOOKMARK",bookmarkId:x.chromeBookmarkId});}else{items=items.filter(v=>v.id!==id);await persist();}}catch(e){alert(e.message);}}
 async function loadTree(){const tree=await chrome.bookmarks.getTree();folders=[];chromeBookmarklets=[];const walk=(nodes,path=[])=>{for(const n of nodes){const p=[...path,n.title||"(root)"];if(!n.url)folders.push({id:n.id,path:p.join(" / "),parentId:n.parentId});if(n.url&&isBookmarklet(n.url))chromeBookmarklets.push(n);if(n.children)walk(n.children,p);}};walk(tree);}
